@@ -10,7 +10,8 @@ class Program
 {
     static string currentDirectory = Directory.GetCurrentDirectory();
     static string[] directoryParts = currentDirectory.Split(Path.DirectorySeparatorChar);
-    static string currentLocation = directoryParts[directoryParts.Length - 1];
+    static string currentLocation = string.Empty;
+    static string currentLocationLast = string.Empty;
 
     static readonly List<string> builtInCommands = new() { "cd", "exit", "help" };
 
@@ -18,13 +19,11 @@ class Program
     {
         Console.Title = "Glyph Shell";
         ShowWelcomeMessage();
+        (currentLocation, currentLocationLast) = FormatPath(currentDirectory);
 
         while (true)
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write($"{currentLocation} : glyph> ");
-            Console.ResetColor();
-
+            DrawTerminalBar();
             string? input = ReadUserInputWithTabCompletion()?.Trim();
             if (string.IsNullOrEmpty(input)) continue;
 
@@ -37,14 +36,77 @@ class Program
             await ExecuteCommand(input);
         }
     }
+
+    static void DrawTerminalBar() {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(currentLocation);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write(currentLocationLast);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(" : glyph> ");
+            Console.ResetColor();
+    }
+
+    static (string formattedPath, string lastFolder) FormatPath(string path)
+    {
+        string homePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string formattedPathResult = path;
+        string lastFolderResult = "";
+
+        if (string.IsNullOrEmpty(homePath))
+        {
+            string[] directoryParts = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+            if (directoryParts.Length > 0)
+            {
+                lastFolderResult = directoryParts.Last();
+                formattedPathResult = string.Join(Path.DirectorySeparatorChar.ToString(), directoryParts.Take(directoryParts.Length - 1));
+                if (formattedPathResult.Length > 0) formattedPathResult += Path.DirectorySeparatorChar;
+            }
+            return (formattedPathResult, lastFolderResult);
+        }
+
+        string normalizedPath = path.Replace(Path.DirectorySeparatorChar, '/');
+        string normalizedHomePath = homePath.Replace(Path.DirectorySeparatorChar, '/');
+
+        string[] pathParts = normalizedPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (pathParts.Length > 0)
+        {
+            lastFolderResult = pathParts.Last();
+            string pathToFormat = "/" + string.Join("/", pathParts.Take(pathParts.Length - 1));
+
+            if (pathToFormat.Length > 0 && !pathToFormat.EndsWith("/")) pathToFormat += "/";
+
+            if (pathToFormat.StartsWith(normalizedHomePath, StringComparison.OrdinalIgnoreCase))
+            {   
+                pathToFormat = pathToFormat[normalizedHomePath.Length..];
+                formattedPathResult = "~" + pathToFormat;
+            }
+            else
+            {
+                formattedPathResult = pathToFormat.Replace('/', Path.DirectorySeparatorChar);
+            }
+        }
+        else
+        {
+            // This means we're likely in the root folder, so we just set the lastFolder to it so it's highlighted
+            formattedPathResult = "";
+            lastFolderResult = path;
+        }
+
+        if (string.IsNullOrEmpty(formattedPathResult) && pathParts.Length > 0)
+        {
+            formattedPathResult = ""; 
+        }
+
+        return (formattedPathResult, lastFolderResult);
+    }
     
     static void UpdateCurrentLocation()
     {
         currentDirectory = Directory.GetCurrentDirectory();
         string[] directoryParts = currentDirectory.Split(Path.DirectorySeparatorChar);
-        currentLocation = directoryParts.Last();
+        (currentLocation, currentLocationLast) = FormatPath(currentDirectory);
     }
-
 
     static string ReadUserInputWithTabCompletion()
     {
@@ -85,7 +147,7 @@ class Program
                 {
                     Console.WriteLine();
                     Console.WriteLine(string.Join("  ", suggestions));
-                    Console.Write($"{currentLocation} : glyph> {input}");
+                    DrawTerminalBar();
                 }
             }
             else if (key.Key == ConsoleKey.LeftArrow)
@@ -109,13 +171,12 @@ class Program
     {
         Console.SetCursorPosition(0, Console.CursorTop);
         
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.Write($"{currentLocation} : glyph> ");
+        DrawTerminalBar();
         
         Console.ResetColor();
         Console.Write(input + " ");
     
-        Console.SetCursorPosition($"{currentLocation} : glyph> ".Length + cursorPosition, Console.CursorTop);
+        Console.SetCursorPosition($"{currentLocation}{currentLocationLast} : glyph> ".Length + cursorPosition, Console.CursorTop);
     }
 
     static List<string> GetSuggestions(string prefix)
