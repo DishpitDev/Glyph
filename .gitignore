@@ -13,6 +13,7 @@ obj/
 *.user
 *.userosscache
 *.sln.docstates
+*.sln
 *.pidb
 *.ilk
 *.log
