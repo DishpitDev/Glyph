@@ -1,5 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 class glyph
 {
@@ -143,7 +148,7 @@ class glyph
                 {
                     Console.WriteLine();
                     Console.WriteLine(string.Join("  ", suggestions));
-                    Console.Write($"{_currentLocation} : glyph> {input}");
+                    DrawTerminalBar();
                 }
             }
             else if (key.Key == ConsoleKey.LeftArrow)
