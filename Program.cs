@@ -148,6 +148,8 @@ class Program
                 }
                 else if (suggestions.Count > 1)
                 {
+                    Console.WriteLine();
+                    Console.WriteLine(string.Join("  ", suggestions));
                     DrawTerminalBar();
                 }
             }
