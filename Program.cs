@@ -150,7 +150,7 @@ class Program
                 {
                     Console.WriteLine();
                     Console.WriteLine(string.Join("  ", suggestions));
-                    Console.Write($"{currentLocation} : glyph> {input}");
+                    DrawTerminalBar();
                 }
             }
             else if (key.Key == ConsoleKey.LeftArrow)
