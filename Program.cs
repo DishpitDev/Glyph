@@ -197,12 +197,11 @@ class glyph
                                     .Select(Path.GetFileNameWithoutExtension)
                                     .Where(name => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                                     .ToList();
-
-        return commandMatches
-            .Concat(fileMatches)
-            .Concat(localExecutables)
-            .Distinct()
-            .ToList();
+        
+            return fileMatches
+                .Concat(localExecutables)
+                .Distinct()
+                .ToList();
     }
 
     static bool IsExecutable(string filePath)
