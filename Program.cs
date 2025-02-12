@@ -6,7 +6,6 @@ class glyph
     static string _currentDirectory = Directory.GetCurrentDirectory();
     static string _currentLocation = string.Empty;
     static string _currentLocationLast = string.Empty;
-    static readonly List<string> BuiltInCommands = new() { "cd", "exit", "help", "ls" };
 
     static async Task Main()
     {
