@@ -148,9 +148,7 @@ class Program
                 }
                 else if (suggestions.Count > 1)
                 {
-                    Console.WriteLine();
-                    Console.WriteLine(string.Join("  ", suggestions));
-                    Console.Write($"{currentLocation} : glyph> {input}");
+                    DrawTerminalBar();
                 }
             }
             else if (key.Key == ConsoleKey.LeftArrow)
