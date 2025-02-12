@@ -177,10 +177,6 @@ class glyph
 
     static List<string> GetSuggestions(string prefix)
     {
-        List<string> commandMatches = BuiltInCommands.Where(cmd =>
-                                                   cmd.StartsWith(prefix,
-                                                                  StringComparison.OrdinalIgnoreCase))
-                                 .ToList();
         List<string> fileMatches = Directory.GetFileSystemEntries(_currentDirectory)
                               .Select(Path.GetFileName)
                               .Where(name => name.StartsWith(prefix,
