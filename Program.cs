@@ -1,24 +1,18 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
-class Program
+class glyph
 {
-    static string currentDirectory = Directory.GetCurrentDirectory();
-    static string[] directoryParts = currentDirectory.Split(Path.DirectorySeparatorChar);
-    static string currentLocation = string.Empty;
-    static string currentLocationLast = string.Empty;
-    static readonly List<string> builtInCommands = new() { "cd", "exit", "help", "ls" };
+    static string _currentDirectory = Directory.GetCurrentDirectory();
+    static string _currentLocation = string.Empty;
+    static string _currentLocationLast = string.Empty;
+    static readonly List<string> BuiltInCommands = new() { "cd", "exit", "help", "ls" };
 
     static async Task Main()
     {
         Console.Title = "Glyph Shell";
         ShowWelcomeMessage();
-        (currentLocation, currentLocationLast) = FormatPath(currentDirectory);
+        (_currentLocation, _currentLocationLast) = FormatPath(_currentDirectory);
 
         while (true)
         {
@@ -41,9 +35,9 @@ class Program
     static void DrawTerminalBar()
     {
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write(currentLocation);
+        Console.Write(_currentLocation);
         Console.ForegroundColor = ConsoleColor.Gray;
-        Console.Write(currentLocationLast);
+        Console.Write(_currentLocationLast);
         Console.ForegroundColor = ConsoleColor.Green;
         Console.Write(" : glyph> ");
         Console.ResetColor();
@@ -105,9 +99,8 @@ class Program
 
     static void UpdateCurrentLocation()
     {
-        currentDirectory = Directory.GetCurrentDirectory();
-        string[] directoryParts = currentDirectory.Split(Path.DirectorySeparatorChar);
-        (currentLocation, currentLocationLast) = FormatPath(currentDirectory);
+        _currentDirectory = Directory.GetCurrentDirectory();
+        (_currentLocation, _currentLocationLast) = FormatPath(_currentDirectory);
     }
 
     static string ReadUserInputWithTabCompletion()
@@ -150,7 +143,7 @@ class Program
                 {
                     Console.WriteLine();
                     Console.WriteLine(string.Join("  ", suggestions));
-                    Console.Write($"{currentLocation} : glyph> {input}");
+                    Console.Write($"{_currentLocation} : glyph> {input}");
                 }
             }
             else if (key.Key == ConsoleKey.LeftArrow)
@@ -179,22 +172,22 @@ class Program
         Console.ResetColor();
         Console.Write(input + " ");
 
-        Console.SetCursorPosition($"{currentLocation}{currentLocationLast} : glyph> ".Length + cursorPosition, Console.CursorTop);
+        Console.SetCursorPosition($"{_currentLocation}{_currentLocationLast} : glyph> ".Length + cursorPosition, Console.CursorTop);
     }
 
     static List<string> GetSuggestions(string prefix)
     {
-        var commandMatches = builtInCommands.Where(cmd =>
+        var commandMatches = BuiltInCommands.Where(cmd =>
                                                    cmd.StartsWith(prefix,
                                                                   StringComparison.OrdinalIgnoreCase))
                                  .ToList();
-        var fileMatches = Directory.GetFileSystemEntries(currentDirectory)
+        var fileMatches = Directory.GetFileSystemEntries(_currentDirectory)
                               .Select(Path.GetFileName)
                               .Where(name => name.StartsWith(prefix,
                                                               StringComparison.OrdinalIgnoreCase))
                               .ToList();
 
-        var localExecutables = Directory.GetFiles(currentDirectory)
+        var localExecutables = Directory.GetFiles(_currentDirectory)
                                     .Where(file => IsExecutable(file))
                                     .Select(Path.GetFileNameWithoutExtension)
                                     .Where(name => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
@@ -218,7 +211,7 @@ class Program
     {
         try
         {
-            var entries = Directory.GetFileSystemEntries(currentDirectory);
+            var entries = Directory.GetFileSystemEntries(_currentDirectory);
             foreach (var entry in entries)
             {
                 bool isDirectory = Directory.Exists(entry);
@@ -306,7 +299,7 @@ class Program
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory = currentDirectory
+                    WorkingDirectory = _currentDirectory
                 }
             };
 
@@ -338,7 +331,7 @@ class Program
             string path = parts[1];
             try
             {
-                string newPath = Path.GetFullPath(Path.Combine(currentDirectory, path));
+                string newPath = Path.GetFullPath(Path.Combine(_currentDirectory, path));
                 if (Directory.Exists(newPath))
                 {
                     Directory.SetCurrentDirectory(newPath);
