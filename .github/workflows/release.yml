@@ -32,11 +32,11 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish --configuration Release --no-restore --configuration Release --runtime linux-x64 --output ./publish-linux
+        run: dotnet publish --configuration Release --no-restore --runtime linux-x64 --output ./publish-linux
       - name: Publish (Windows)
-        run: dotnet publish --configuration Release --no-restore --configuration Release --runtime win-x64 --output ./publish-win
+        run: dotnet publish --configuration Release --no-restore --runtime win-x64 --output ./publish-win
       - name: Publish (macOS)
-        run: dotnet publish --configuration Release --no-restore --configuration Release --runtime osx-x64 --output ./publish-osx
+        run: dotnet publish --configuration Release --no-restore --runtime osx-x64 --output ./publish-osx
 
       - name: Create Release Archive
         run: |
