@@ -1,0 +1,85 @@
+﻿name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: extract_version
+        run: |
+          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' Glyph.csproj)
+          echo "::set-output name=version::$VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish --configuration Release --no-restore --configuration Release --runtime linux-x64 --output ./publish-linux
+      - name: Publish (Windows)
+        run: dotnet publish --configuration Release --no-restore --configuration Release --runtime win-x64 --output ./publish-win
+      - name: Publish (macOS)
+        run: dotnet publish --configuration Release --no-restore --configuration Release --runtime osx-x64 --output ./publish-osx
+
+      - name: Create Release Archive
+        run: |
+          zip -r glyph-linux.zip ./publish-linux
+          zip -r glyph-win.zip ./publish-win
+          zip -r glyph-osx.zip ./publish-osx
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.extract_version.outputs.version }}
+          release_name: Release v${{ steps.extract_version.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset (Linux)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./glyph-linux.zip
+          asset_name: glyph-linux.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset (Windows)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./glyph-win.zip
+          asset_name: glyph-win.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset (macOS)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./glyph-osx.zip
+          asset_name: glyph-osx.zip
+          asset_content_type: application/zip
