@@ -37,6 +37,14 @@ class Program
             await ExecuteCommand(input);
         }
     }
+    
+    static void UpdateCurrentLocation()
+    {
+        currentDirectory = Directory.GetCurrentDirectory();
+        string[] directoryParts = currentDirectory.Split(Path.DirectorySeparatorChar);
+        currentLocation = directoryParts.Last();
+    }
+
 
     static string ReadUserInputWithTabCompletion()
     {
@@ -188,8 +196,8 @@ class Program
                     string newPath = Path.GetFullPath(Path.Combine(currentDirectory, path));
                     if (Directory.Exists(newPath))
                     {
-                        currentDirectory = newPath;
-                        Directory.SetCurrentDirectory(currentDirectory);
+                        Directory.SetCurrentDirectory(newPath);
+                        UpdateCurrentLocation();
                     }
                     else
                     {

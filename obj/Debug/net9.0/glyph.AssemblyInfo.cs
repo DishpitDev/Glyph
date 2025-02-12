@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("glyph")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+27034d9e29673571666a022a254680eebc71f7b9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+814213a160a9e2ce1458c56463fe48b79407d13e")]
 [assembly: System.Reflection.AssemblyProductAttribute("glyph")]
 [assembly: System.Reflection.AssemblyTitleAttribute("glyph")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]
