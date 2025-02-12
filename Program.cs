@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Glyph
 {
@@ -8,6 +10,10 @@ namespace Glyph
         static string _currentDirectory = Directory.GetCurrentDirectory();
         static string _currentLocation = string.Empty;
         static string _currentLocationLast = string.Empty;
+        
+        private const string GitHubRepoOwner = "DishpitDev";
+        private const string GitHubRepoName = "Glyph";
+        private const string UpdateDirectoryName = "GlyphUpdates";
 
         static async Task Main()
         {
@@ -19,7 +25,8 @@ namespace Glyph
             {
                 DrawTerminalBar();
                 string input = ReadUserInputWithTabCompletion().Trim();
-                if (string.IsNullOrEmpty(input)) continue;
+                if (string.IsNullOrEmpty(input))
+                    continue;
 
                 if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
                 {
@@ -59,7 +66,8 @@ namespace Glyph
                     lastFolderResult = directoryParts.Last();
                     formattedPathResult = string.Join(Path.DirectorySeparatorChar.ToString(),
                         directoryParts.Take(directoryParts.Length - 1));
-                    if (formattedPathResult.Length > 0) formattedPathResult += Path.DirectorySeparatorChar;
+                    if (formattedPathResult.Length > 0)
+                        formattedPathResult += Path.DirectorySeparatorChar;
                 }
 
                 return (formattedPathResult, lastFolderResult);
@@ -74,7 +82,8 @@ namespace Glyph
                 lastFolderResult = pathParts.Last();
                 string pathToFormat = "/" + string.Join("/", pathParts.Take(pathParts.Length - 1));
 
-                if (pathToFormat.Length > 0 && !pathToFormat.EndsWith("/")) pathToFormat += "/";
+                if (pathToFormat.Length > 0 && !pathToFormat.EndsWith("/"))
+                    pathToFormat += "/";
 
                 if (pathToFormat.StartsWith(normalizedHomePath, StringComparison.OrdinalIgnoreCase))
                 {
@@ -150,11 +159,13 @@ namespace Glyph
                 }
                 else if (key.Key == ConsoleKey.LeftArrow)
                 {
-                    if (cursorPosition > 0) cursorPosition--;
+                    if (cursorPosition > 0)
+                        cursorPosition--;
                 }
                 else if (key.Key == ConsoleKey.RightArrow)
                 {
-                    if (cursorPosition < input.Length) cursorPosition++;
+                    if (cursorPosition < input.Length)
+                        cursorPosition++;
                 }
                 else
                 {
@@ -280,6 +291,9 @@ namespace Glyph
                 case "help":
                     ShowHelp();
                     break;
+                case "update":
+                    await UpdateCommand();
+                    break;
                 default:
                     await ExecuteExternalCommand(command);
                     break;
@@ -309,7 +323,8 @@ namespace Glyph
                 string error = await process.StandardError.ReadToEndAsync();
                 await process.WaitForExitAsync();
 
-                if (!string.IsNullOrWhiteSpace(output)) Console.WriteLine(output);
+                if (!string.IsNullOrWhiteSpace(output))
+                    Console.WriteLine(output);
                 if (!string.IsNullOrWhiteSpace(error))
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -365,6 +380,220 @@ namespace Glyph
             Console.WriteLine("  ls             - List the contents of the current directory.");
             Console.WriteLine("  exit           - Exit the shell.");
             Console.WriteLine("  help           - Display this help message.");
+            Console.WriteLine("  update         - Update the shell to the latest version.");
+        }
+
+        static async Task UpdateCommand()
+        {
+            Console.WriteLine("Checking for updates...");
+
+            try
+            {
+                string tempUpdateDirectory = Path.Combine(
+                    Path.GetTempPath(),
+                    UpdateDirectoryName
+                );
+
+                if (!Directory.Exists(tempUpdateDirectory))
+                {
+                    Directory.CreateDirectory(tempUpdateDirectory);
+                }
+
+                string latestReleaseInfo = await GetLatestReleaseInfo();
+                if (string.IsNullOrEmpty(latestReleaseInfo))
+                {
+                    Console.WriteLine("Could not retrieve latest release information.");
+                    return;
+                }
+
+                string assetUrl = ParseAssetUrl(latestReleaseInfo);
+                if (string.IsNullOrEmpty(assetUrl))
+                {
+                    Console.WriteLine("Could not determine the asset URL for this platform.");
+                    return;
+                }
+
+                string downloadedZipPath = Path.Combine(
+                    tempUpdateDirectory,
+                    "update.zip"
+                );
+                await DownloadFile(assetUrl, downloadedZipPath);
+
+                string extractionPath = Path.Combine(
+                    tempUpdateDirectory,
+                    "extracted"
+                );
+                if (Directory.Exists(extractionPath))
+                {
+                    Directory.Delete(extractionPath, true);
+                }
+
+                ZipFile.ExtractToDirectory(downloadedZipPath, extractionPath);
+
+                string executableName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
+                string extractedExecutablePath = Path.Combine(
+                    extractionPath,
+                    executableName
+                );
+
+                if (!File.Exists(extractedExecutablePath))
+                {
+                    Console.WriteLine(
+                        "The executable was not found in the extracted files."
+                    );
+                    return;
+                }
+
+                string currentExecutablePath = Assembly.GetExecutingAssembly().Location;
+                string backupExecutablePath = Path.Combine(
+                    tempUpdateDirectory,
+                    "Glyph.old"
+                );
+
+                try
+                {
+                    File.Move(currentExecutablePath, backupExecutablePath, true);
+                    File.Copy(extractedExecutablePath, currentExecutablePath, true);
+                    Console.WriteLine("Successfully updated Glyph. Restarting...");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Update failed: {ex.Message}");
+                    if (File.Exists(backupExecutablePath))
+                    {
+                        File.Move(backupExecutablePath, currentExecutablePath, true);
+                    }
+
+                    return;
+                }
+                finally
+                {
+                    try
+                    {
+                        Directory.Delete(tempUpdateDirectory, true);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Error cleaning up temp directory: {e.Message}");
+                    }
+                }
+
+                Process.Start(currentExecutablePath);
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Update failed: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
+
+        static async Task<string> GetLatestReleaseInfo()
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.UserAgent.Add(
+                    new System.Net.Http.Headers.ProductInfoHeaderValue(
+                        "Glyph",
+                        Assembly
+                            .GetExecutingAssembly()
+                            .GetCustomAttribute<AssemblyFileVersionAttribute>()
+                            ?.Version ?? "1.0"
+                    )
+                );
+                string url =
+                    $"https://api.github.com/repos/{GitHubRepoOwner}/{GitHubRepoName}/releases/latest";
+                HttpResponseMessage response = await client.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
+            }
+        }
+
+        static string ParseAssetUrl(string releaseInfo)
+        {
+            try
+            {
+                dynamic release = Newtonsoft.Json.JsonConvert.DeserializeObject(releaseInfo);
+                string platform;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    platform = "win";
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    platform = "linux";
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    platform = "osx";
+                }
+                else
+                {
+                    Console.WriteLine("Unsupported platform.");
+                    return null;
+                }
+
+                foreach (var asset in release.assets)
+                {
+                    string assetName = asset.name.ToString().ToLower();
+                    if (assetName.Contains(platform) && assetName.EndsWith(".zip"))
+                    {
+                        return asset.browser_download_url.ToString();
+                    }
+                }
+
+                Console.WriteLine(
+                    "No suitable asset found for the current platform."
+                );
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing release info: {ex.Message}");
+                return null;
+            }
+        }
+
+        static async Task DownloadFile(string url, string destinationPath)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.UserAgent.Add(
+                    new System.Net.Http.Headers.ProductInfoHeaderValue(
+                        "Glyph",
+                        Assembly
+                            .GetExecutingAssembly()
+                            .GetCustomAttribute<AssemblyFileVersionAttribute>()
+                            ?.Version ?? "1.0"
+                    )
+                );
+                using (
+                    HttpResponseMessage response = await client.GetAsync(
+                        url,
+                        HttpCompletionOption.ResponseHeadersRead
+                    )
+                )
+                {
+                    response.EnsureSuccessStatusCode();
+                    using (
+                        Stream contentStream = await response.Content.ReadAsStreamAsync()
+                    )
+                    using (
+                        FileStream fileStream = new FileStream(
+                            destinationPath,
+                            FileMode.Create,
+                            FileAccess.Write,
+                            FileShare.None,
+                            8192,
+                            true
+                        )
+                    )
+                    {
+                        await contentStream.CopyToAsync(fileStream);
+                    }
+                }
+            }
         }
     }
 }
