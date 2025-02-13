@@ -13,7 +13,7 @@
     <Description>The last shell you'll ever use.</Description>
     <Authors>DishpitDev</Authors>
     <Copyright>© 2025 DishpitDev. All rights reserved.</Copyright>
-    <ApplicationIcon>assets/icon.png</ApplicationIcon>
+    <ApplicationIcon>assets/icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,8 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="assets\icon.png" />
-    <Resource Include="assets\icon.png" />
+    <None Remove="assets\icon.ico" />
+    <Resource Include="assets\icon.ico" />
   </ItemGroup>
 
 </Project>
