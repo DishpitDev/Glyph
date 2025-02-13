@@ -490,9 +490,10 @@ namespace Glyph
                 }
 
                 string currentExecutablePath = Assembly.GetExecutingAssembly().Location;
+                string currentExecutableExtension = Path.GetExtension(currentExecutablePath);
                 string backupExecutablePath = Path.Combine(
                     tempUpdateDirectory,
-                    "Glyph.old"
+                    "Glyph.old" + currentExecutableExtension
                 );
 
                 try
