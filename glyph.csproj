@@ -5,7 +5,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.0.3</Version>
+    <Version>0.0.4</Version>
     <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
     <PublishTrimmed>true</PublishTrimmed>
     <PublishReadyToRun>true</PublishReadyToRun>
@@ -13,10 +13,16 @@
     <Description>The last shell you'll ever use.</Description>
     <Authors>DishpitDev</Authors>
     <Copyright>© 2025 DishpitDev. All rights reserved.</Copyright>
+    <ApplicationIcon>assets/icon.png</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="assets\icon.png" />
+    <Resource Include="assets\icon.png" />
   </ItemGroup>
 
 </Project>
