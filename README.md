@@ -31,12 +31,4 @@
 
 -[ ] `rm` file
 
--[ ] show current git branch in the prompt
-
--[ ] `cpu` -> show cpu usage
-
--[ ] `mem` -> show ram usage
-
--[ ] `disk` -> show disc space usage
-
 ## Checklist for POSIX Compliance

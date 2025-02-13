@@ -111,6 +111,19 @@ namespace Glyph
 
         static void DrawTerminalBar()
         {
+            Console.WriteLine();
+            
+            string gitBranch = GetGitBranch();
+            if (!string.IsNullOrEmpty(gitBranch))
+            {
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.Write("(git: ");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write($"{gitBranch}");
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine(")");
+                Console.ResetColor();
+            }
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write(_currentLocation);
             Console.ForegroundColor = ConsoleColor.Gray;
@@ -118,6 +131,28 @@ namespace Glyph
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write(" : glyph> ");
             Console.ResetColor();
+        }
+        
+        static string GetGitBranch()
+        {
+            try
+            {
+                string gitHeadPath = Path.Combine(_currentDirectory, ".git", "HEAD");
+                if (File.Exists(gitHeadPath))
+                {
+                    string headContents = File.ReadAllText(gitHeadPath).Trim();
+                    if (headContents.StartsWith("ref: refs/heads/"))
+                    {
+                        return headContents.Replace("ref: refs/heads/", "").Trim();
+                    }
+                }
+            }
+            catch
+            {
+                return string.Empty;
+            }
+
+            return string.Empty;
         }
 
         static (string formattedPath, string lastFolder) FormatPath(string path)
@@ -248,15 +283,23 @@ namespace Glyph
         static void RedrawInput(string input, int cursorPosition)
         {
             Console.SetCursorPosition(0, Console.CursorTop);
-
-            DrawTerminalBar();
-
+            
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(_currentLocation);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write(_currentLocationLast);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(" : glyph> ");
             Console.ResetColor();
-            Console.Write(input + " ");
-
-            Console.SetCursorPosition($"{_currentLocation}{_currentLocationLast} : glyph> ".Length + cursorPosition,
-                Console.CursorTop);
+            
+            int inputStartPos = $"{_currentLocation}{_currentLocationLast} : glyph> ".Length;
+            Console.Write(new string(' ', Console.WindowWidth - inputStartPos));
+            
+            Console.SetCursorPosition(inputStartPos, Console.CursorTop);
+            Console.Write(input);
+            Console.SetCursorPosition(inputStartPos + cursorPosition, Console.CursorTop);
         }
+
 
         static List<string> GetSuggestions(string prefix)
         {
