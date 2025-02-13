@@ -307,16 +307,30 @@ namespace Glyph
         {
             try
             {
+                string[] parts = command.Split(' ', 2);
+                string executableName = parts[0];
+                string arguments = parts.Length > 1 ? parts[1] : "";
+                
+                string? executablePath = FindExecutableInPath(executableName);
+
+                if (executablePath == null)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Command not found: {executableName}");
+                    Console.ResetColor();
+                    return;
+                }
+
                 var process = new Process()
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = command.Split(' ')[0],
-                        Arguments = string.Join(" ", command.Split(' ').Skip(1)),
+                        FileName = executablePath,
+                        Arguments = arguments,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
-                        CreateNoWindow = true,
+                        CreateNoWindow = false,
                         WorkingDirectory = _currentDirectory
                     }
                 };
@@ -342,6 +356,38 @@ namespace Glyph
                 Console.ResetColor();
             }
         }
+        
+        static string? FindExecutableInPath(string executableName)
+        {
+            string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (string.IsNullOrEmpty(pathEnv))
+            {
+                return null;
+            }
+
+            string[] paths = pathEnv.Split(Path.PathSeparator);
+
+            foreach (string path in paths)
+            {
+                string fullPath = Path.Combine(path, executableName);
+                if (File.Exists(fullPath))
+                {
+                    return fullPath;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    string fullPathWithExe = fullPath + ".exe";
+                    if (File.Exists(fullPathWithExe))
+                    {
+                        return fullPathWithExe;
+                    }
+                }
+            }
+
+            return null;
+        }
+
 
         static void HandleCdCommand(string[] parts)
         {
