@@ -386,9 +386,15 @@ namespace Glyph
         static async Task UpdateCommand()
         {
             Console.WriteLine("Checking for updates...");
+            string logFilePath = Path.Combine(
+                Path.GetTempPath(),
+                "GlyphUpdateLog.txt"
+            );
 
             try
             {
+                Log($"Starting update process...", logFilePath);
+                
                 string tempUpdateDirectory = Path.Combine(
                     Path.GetTempPath(),
                     UpdateDirectoryName
@@ -396,12 +402,17 @@ namespace Glyph
 
                 if (!Directory.Exists(tempUpdateDirectory))
                 {
+                    Log($"Creating directory: {tempUpdateDirectory}", logFilePath);
                     Directory.CreateDirectory(tempUpdateDirectory);
                 }
 
                 string latestReleaseInfo = await GetLatestReleaseInfo();
                 if (string.IsNullOrEmpty(latestReleaseInfo))
                 {
+                    Log(
+                        "Could not retrieve latest release information.",
+                        logFilePath
+                    );
                     Console.WriteLine("Could not retrieve latest release information.");
                     return;
                 }
@@ -409,6 +420,10 @@ namespace Glyph
                 string assetUrl = ParseAssetUrl(latestReleaseInfo);
                 if (string.IsNullOrEmpty(assetUrl))
                 {
+                    Log(
+                        "Could not determine the asset URL for this platform.",
+                        logFilePath
+                    );
                     Console.WriteLine("Could not determine the asset URL for this platform.");
                     return;
                 }
@@ -417,7 +432,7 @@ namespace Glyph
                     tempUpdateDirectory,
                     "update.zip"
                 );
-                await DownloadFile(assetUrl, downloadedZipPath);
+                await DownloadFile(assetUrl, downloadedZipPath, logFilePath);
 
                 string extractionPath = Path.Combine(
                     tempUpdateDirectory,
@@ -425,9 +440,11 @@ namespace Glyph
                 );
                 if (Directory.Exists(extractionPath))
                 {
+                    Log($"Deleting existing extraction path: {extractionPath}", logFilePath);
                     Directory.Delete(extractionPath, true);
                 }
 
+                Log($"Extracting to: {extractionPath}", logFilePath);
                 ZipFile.ExtractToDirectory(downloadedZipPath, extractionPath);
 
                 string executableName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
@@ -438,6 +455,10 @@ namespace Glyph
 
                 if (!File.Exists(extractedExecutablePath))
                 {
+                    Log(
+                        $"The executable was not found in the extracted files: {extractedExecutablePath}",
+                        logFilePath
+                    );
                     Console.WriteLine(
                         "The executable was not found in the extracted files."
                     );
@@ -452,15 +473,29 @@ namespace Glyph
 
                 try
                 {
+                    Log(
+                        $"Moving {currentExecutablePath} to {backupExecutablePath}",
+                        logFilePath
+                    );
                     File.Move(currentExecutablePath, backupExecutablePath, true);
+                    Log(
+                        $"Copying {extractedExecutablePath} to {currentExecutablePath}",
+                        logFilePath
+                    );
                     File.Copy(extractedExecutablePath, currentExecutablePath, true);
                     Console.WriteLine("Successfully updated Glyph. Restarting...");
+                    Log("Successfully updated Glyph. Restarting...", logFilePath);
                 }
                 catch (Exception ex)
                 {
+                    Log($"Update failed: {ex.Message}", logFilePath);
                     Console.WriteLine($"Update failed: {ex.Message}");
                     if (File.Exists(backupExecutablePath))
                     {
+                        Log(
+                            $"Restoring backup {backupExecutablePath} to {currentExecutablePath}",
+                            logFilePath
+                        );
                         File.Move(backupExecutablePath, currentExecutablePath, true);
                     }
 
@@ -470,10 +505,15 @@ namespace Glyph
                 {
                     try
                     {
+                        Log($"Cleaning up temp directory: {tempUpdateDirectory}", logFilePath);
                         Directory.Delete(tempUpdateDirectory, true);
                     }
                     catch (Exception e)
                     {
+                        Log(
+                            $"Error cleaning up temp directory: {e.Message}",
+                            logFilePath
+                        );
                         Console.WriteLine($"Error cleaning up temp directory: {e.Message}");
                     }
                 }
@@ -483,6 +523,7 @@ namespace Glyph
             }
             catch (Exception ex)
             {
+                Log($"Update failed: {ex.Message}", logFilePath);
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Update failed: {ex.Message}");
                 Console.ResetColor();
@@ -555,44 +596,111 @@ namespace Glyph
             }
         }
 
-        static async Task DownloadFile(string url, string destinationPath)
+        static async Task DownloadFile(
+            string url,
+            string destinationPath,
+            string logFilePath
+        )
         {
-            using (HttpClient client = new HttpClient())
+            try
             {
-                client.DefaultRequestHeaders.UserAgent.Add(
-                    new System.Net.Http.Headers.ProductInfoHeaderValue(
-                        "Glyph",
-                        Assembly
-                            .GetExecutingAssembly()
-                            .GetCustomAttribute<AssemblyFileVersionAttribute>()
-                            ?.Version ?? "1.0"
-                    )
-                );
-                using (
-                    HttpResponseMessage response = await client.GetAsync(
-                        url,
-                        HttpCompletionOption.ResponseHeadersRead
-                    )
-                )
+                using (HttpClient client = new HttpClient())
                 {
-                    response.EnsureSuccessStatusCode();
+                    client.DefaultRequestHeaders.UserAgent.Add(
+                        new System.Net.Http.Headers.ProductInfoHeaderValue(
+                            "Glyph",
+                            Assembly
+                                .GetExecutingAssembly()
+                                .GetCustomAttribute<AssemblyFileVersionAttribute>()
+                                ?.Version ?? "1.0"
+                        )
+                    );
                     using (
-                        Stream contentStream = await response.Content.ReadAsStreamAsync()
-                    )
-                    using (
-                        FileStream fileStream = new FileStream(
-                            destinationPath,
-                            FileMode.Create,
-                            FileAccess.Write,
-                            FileShare.None,
-                            8192,
-                            true
+                        HttpResponseMessage response = await client.GetAsync(
+                            url,
+                            HttpCompletionOption.ResponseHeadersRead
                         )
                     )
                     {
-                        await contentStream.CopyToAsync(fileStream);
+                        response.EnsureSuccessStatusCode();
+                        long? totalBytes = response.Content.Headers.ContentLength;
+
+                        using (
+                            Stream contentStream = await response.Content.ReadAsStreamAsync()
+                        )
+                        using (
+                            FileStream fileStream = new FileStream(
+                                destinationPath,
+                                FileMode.Create,
+                                FileAccess.Write,
+                                FileShare.None,
+                                8192,
+                                true
+                            )
+                        )
+                        {
+                            var totalRead = 0L;
+                            var buffer = new byte[8192];
+                            var isMoreToRead = true;
+
+                            do
+                            {
+                                var read = await contentStream.ReadAsync(
+                                    buffer,
+                                    0,
+                                    buffer.Length
+                                );
+                                if (read == 0)
+                                {
+                                    isMoreToRead = false;
+                                }
+                                else
+                                {
+                                    await fileStream.WriteAsync(buffer, 0, read);
+
+                                    totalRead += read;
+
+                                    if (totalBytes.HasValue)
+                                    {
+                                        var percentage =
+                                            (double)totalRead / totalBytes.Value * 100;
+                                        DrawProgressBar(percentage);
+                                    }
+                                }
+                            } while (isMoreToRead);
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Log($"Download failed: {ex.Message}", logFilePath);
+                throw;
+            }
+        }
+
+        static void DrawProgressBar(double percentage)
+        {
+            Console.CursorVisible = false;
+            int barSize = 50;
+            int fillSize = (int)(barSize * percentage / 100);
+            string fill = new string('=', fillSize);
+            string space = new string(' ', barSize - fillSize);
+
+            Console.Write($"\r[{fill}{space}] {percentage:F2}%");
+            Console.CursorVisible = true;
+        }
+
+        static void Log(string message, string logFilePath)
+        {
+            try
+            {
+                string logMessage = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}";
+                File.AppendAllText(logFilePath, logMessage + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing to log file: {ex.Message}");
             }
         }
     }
