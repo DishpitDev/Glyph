@@ -488,7 +488,7 @@ namespace Glyph
                     return;
                 }
                 
-                string currentExecutablePath = Assembly.GetExecutingAssembly().Location;
+                string currentExecutablePath = Process.GetCurrentProcess().MainModule.FileName;
                 string currentExecutableExtension = Path.GetExtension(currentExecutablePath);
                 string backupExecutablePath = Path.Combine(
                     tempUpdateDirectory,
