@@ -21,4 +21,22 @@
 
 -[ ] ensure compatibility with windows (cmd/powershell) and linux/macos (bash/zsh)
 
+-[ ] persistent command history
+
+-[ ] `touch` file operation
+
+-[ ] `mv` file operation
+
+-[ ] `cp` file operation
+
+-[ ] `rm` file
+
+-[ ] show current git branch in the prompt
+
+-[ ] `cpu` -> show cpu usage
+
+-[ ] `mem` -> show ram usage
+
+-[ ] `disk` -> show disc space usage
+
 ## Checklist for POSIX Compliance
