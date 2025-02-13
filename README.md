@@ -21,4 +21,14 @@
 
 -[ ] ensure compatibility with windows (cmd/powershell) and linux/macos (bash/zsh)
 
+-[ ] persistent command history
+
+-[ ] `touch` file operation
+
+-[ ] `mv` file operation
+
+-[ ] `cp` file operation
+
+-[ ] `rm` file
+
 ## Checklist for POSIX Compliance

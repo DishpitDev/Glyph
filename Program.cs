@@ -111,6 +111,19 @@ namespace Glyph
 
         static void DrawTerminalBar()
         {
+            Console.WriteLine();
+            
+            string gitBranch = GetGitBranch();
+            if (!string.IsNullOrEmpty(gitBranch))
+            {
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.Write("(git: ");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write($"{gitBranch}");
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine(")");
+                Console.ResetColor();
+            }
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write(_currentLocation);
             Console.ForegroundColor = ConsoleColor.Gray;
@@ -118,6 +131,28 @@ namespace Glyph
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write(" : glyph> ");
             Console.ResetColor();
+        }
+        
+        static string GetGitBranch()
+        {
+            try
+            {
+                string gitHeadPath = Path.Combine(_currentDirectory, ".git", "HEAD");
+                if (File.Exists(gitHeadPath))
+                {
+                    string headContents = File.ReadAllText(gitHeadPath).Trim();
+                    if (headContents.StartsWith("ref: refs/heads/"))
+                    {
+                        return headContents.Replace("ref: refs/heads/", "").Trim();
+                    }
+                }
+            }
+            catch
+            {
+                return string.Empty;
+            }
+
+            return string.Empty;
         }
 
         static (string formattedPath, string lastFolder) FormatPath(string path)
@@ -248,15 +283,23 @@ namespace Glyph
         static void RedrawInput(string input, int cursorPosition)
         {
             Console.SetCursorPosition(0, Console.CursorTop);
-
-            DrawTerminalBar();
-
+            
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(_currentLocation);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write(_currentLocationLast);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(" : glyph> ");
             Console.ResetColor();
-            Console.Write(input + " ");
-
-            Console.SetCursorPosition($"{_currentLocation}{_currentLocationLast} : glyph> ".Length + cursorPosition,
-                Console.CursorTop);
+            
+            int inputStartPos = $"{_currentLocation}{_currentLocationLast} : glyph> ".Length;
+            Console.Write(new string(' ', Console.WindowWidth - inputStartPos));
+            
+            Console.SetCursorPosition(inputStartPos, Console.CursorTop);
+            Console.Write(input);
+            Console.SetCursorPosition(inputStartPos + cursorPosition, Console.CursorTop);
         }
+
 
         static List<string> GetSuggestions(string prefix)
         {
@@ -360,6 +403,15 @@ namespace Glyph
                 case "ls":
                     ListDirectoryContents();
                     break;
+                case "cpu":
+                    ShowCpuUsage();
+                    break;
+                case "mem":
+                    ShowMemoryUsage();
+                    break;
+                case "disk":
+                    ShowDiskUsage();
+                    break;
                 case "help":
                     ShowHelp();
                     break;
@@ -461,6 +513,85 @@ namespace Glyph
         }
 
 
+        static void ShowCpuUsage()
+        {
+            try
+            {
+                var process = Process.GetCurrentProcess();
+                var startTime = DateTime.UtcNow;
+                var startCpuUsage = process.TotalProcessorTime;
+
+                Thread.Sleep(500);
+
+                var endTime = DateTime.UtcNow;
+                var endCpuUsage = process.TotalProcessorTime;
+
+                double cpuUsedMs = (endCpuUsage - startCpuUsage).TotalMilliseconds;
+                double timePassedMs = (endTime - startTime).TotalMilliseconds;
+                int cpuCores = Environment.ProcessorCount;
+                double cpuUsagePercentage = (cpuUsedMs / (timePassedMs * cpuCores)) * 100;
+
+                Console.WriteLine($"CPU Usage: {cpuUsagePercentage:F2}%");
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error fetching CPU usage: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
+        
+        static void ShowMemoryUsage()
+        {
+            try
+            {
+                var memoryInfo = GC.GetGCMemoryInfo();
+                long totalMemory = memoryInfo.TotalAvailableMemoryBytes;
+                long usedMemory = GC.GetTotalMemory(false);
+                long freeMemory = totalMemory - usedMemory;
+
+                Console.WriteLine("Memory Usage:");
+                Console.WriteLine($"  Total: {totalMemory / (1024 * 1024)} MB");
+                Console.WriteLine($"  Used:  {usedMemory / (1024 * 1024)} MB");
+                Console.WriteLine($"  Free:  {freeMemory / (1024 * 1024)} MB");
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error fetching memory usage: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
+        
+        static void ShowDiskUsage()
+        {
+            try
+            {
+                DriveInfo drive = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady);
+                if (drive != null)
+                {
+                    long totalSpace = drive.TotalSize;
+                    long freeSpace = drive.TotalFreeSpace;
+                    long usedSpace = totalSpace - freeSpace;
+
+                    Console.WriteLine($"Disk Usage ({drive.Name}):");
+                    Console.WriteLine($"  Total: {totalSpace / (1024 * 1024 * 1024)} GB");
+                    Console.WriteLine($"  Used:  {usedSpace / (1024 * 1024 * 1024)} GB");
+                    Console.WriteLine($"  Free:  {freeSpace / (1024 * 1024 * 1024)} GB");
+                }
+                else
+                {
+                    Console.WriteLine("No available drives detected.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error fetching disk usage: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
+
         static void HandleCdCommand(string[] parts)
         {
             if (parts.Length > 1)
@@ -499,6 +630,9 @@ namespace Glyph
             Console.WriteLine("Available commands:");
             Console.WriteLine("  cd <directory> - Change the current directory.");
             Console.WriteLine("  ls             - List the contents of the current directory.");
+            Console.WriteLine("  cpu            - Show CPU usage.");
+            Console.WriteLine("  mem            - Show available memory.");
+            Console.WriteLine("  disk           - Show disk space usage.");
             Console.WriteLine("  exit           - Exit the shell.");
             Console.WriteLine("  help           - Display this help message.");
             Console.WriteLine("  update         - Update the shell to the latest version.");
