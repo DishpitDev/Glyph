@@ -17,6 +17,9 @@ namespace Glyph
 
         static async Task Main()
         {
+            Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            _currentDirectory = Directory.GetCurrentDirectory();
+            
             Console.Title = "Glyph Shell";
             ShowWelcomeMessage();
             (_currentLocation, _currentLocationLast) = FormatPath(_currentDirectory);
