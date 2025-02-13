@@ -73,7 +73,7 @@ namespace Glyph
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine(
                         $"Glyph v{latestVersion} is now available! " +
-                        "Type 'update' to update."
+                        "Type 'glyph update' to update."
                     );
                     Console.ResetColor();
                     return true;
