@@ -447,9 +447,7 @@ namespace Glyph
                 Log($"Extracting to: {extractionPath}", logFilePath);
                 ZipFile.ExtractToDirectory(downloadedZipPath, extractionPath);
 
-                string executableName = Path.GetFileNameWithoutExtension(
-                    Assembly.GetExecutingAssembly().Location
-                );
+                string executableName = Process.GetCurrentProcess().ProcessName;
 
                 string platformSubdirectory = "";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -471,10 +469,11 @@ namespace Glyph
                     return;
                 }
 
+                string executableExtension = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
                 string extractedExecutablePath = Path.Combine(
                     extractionPath,
                     platformSubdirectory,
-                    executableName + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "")
+                    executableName + executableExtension
                 );
 
                 if (!File.Exists(extractedExecutablePath))
@@ -489,10 +488,7 @@ namespace Glyph
                     return;
                 }
                 
-                string executableExtension =
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
-                string currentExecutablePath = Path.Combine(Directory.GetCurrentDirectory(),
-                    Assembly.GetExecutingAssembly().GetName().Name + executableExtension);
+                string currentExecutablePath = Assembly.GetExecutingAssembly().Location;
                 string currentExecutableExtension = Path.GetExtension(currentExecutablePath);
                 string backupExecutablePath = Path.Combine(
                     tempUpdateDirectory,
