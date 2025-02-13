@@ -21,10 +21,9 @@ namespace Glyph
             _currentDirectory = Directory.GetCurrentDirectory();
             
             Console.Title = "Glyph Shell";
-
-            bool updateAvailable = await CheckForUpdates();
             
             ShowWelcomeMessage();
+            bool updateAvailable = await CheckForUpdates();
             (_currentLocation, _currentLocationLast) = FormatPath(_currentDirectory);
 
             while (true)
@@ -73,7 +72,7 @@ namespace Glyph
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine(
-                        $"A new version of Glyph is available: {latestVersion}. " +
+                        $"Glyph v{latestVersion} is now available! " +
                         "Type 'update' to update."
                     );
                     Console.ResetColor();
@@ -329,6 +328,8 @@ namespace Glyph
                     ?.Version ??
                 "Unknown";
 
+            string currentTime = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss");
+
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@$"
      ░▒▓██████▓▒░░▒▓█▓▒░   ░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░ 
@@ -340,6 +341,7 @@ namespace Glyph
      ░▒▓██████▓▒░░▒▓████████▓▒░▒▓█▓▒░   ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░ 
 
       Glyph Shell - v{version} - by DishpitDev  
+      Current time: {currentTime}
       Open-source and built for power. Type 'exit' to quit.
       ");
             Console.ResetColor();
@@ -361,8 +363,11 @@ namespace Glyph
                 case "help":
                     ShowHelp();
                     break;
-                case "update":
-                    await UpdateCommand();
+                case "glyph":
+                    if (parts[1] == "update")
+                    {
+                        await UpdateCommand();
+                    }
                     break;
                 default:
                     await ExecuteExternalCommand(command);
