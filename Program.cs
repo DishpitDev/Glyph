@@ -21,6 +21,9 @@ namespace Glyph
             _currentDirectory = Directory.GetCurrentDirectory();
             
             Console.Title = "Glyph Shell";
+
+            bool updateAvailable = await CheckForUpdates();
+            
             ShowWelcomeMessage();
             (_currentLocation, _currentLocationLast) = FormatPath(_currentDirectory);
 
@@ -41,6 +44,70 @@ namespace Glyph
 
                 await ExecuteCommand(input);
             }
+        }
+
+        static async Task<bool> CheckForUpdates()
+        {
+            try
+            {
+                string latestReleaseInfo = await GetLatestReleaseInfo();
+                if (string.IsNullOrEmpty(latestReleaseInfo))
+                {
+                    return false;
+                }
+
+                string latestVersion = ParseLatestVersion(latestReleaseInfo);
+                string currentVersion =
+                    Assembly
+                        .GetExecutingAssembly()
+                        .GetCustomAttribute<AssemblyFileVersionAttribute>()
+                        ?.Version ??
+                    "0.0.0";
+
+                if (string.IsNullOrEmpty(latestVersion))
+                {
+                    return false;
+                }
+
+                if (IsNewerVersionAvailable(currentVersion, latestVersion))
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine(
+                        $"A new version of Glyph is available: {latestVersion}. " +
+                        "Type 'update' to update."
+                    );
+                    Console.ResetColor();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
+        static string ParseLatestVersion(string releaseInfo)
+        {
+            try
+            {
+                dynamic release = Newtonsoft.Json.JsonConvert.DeserializeObject(releaseInfo);
+                return release.tag_name.ToString().TrimStart('v');
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        static bool IsNewerVersionAvailable(string currentVersion, string latestVersion)
+        {
+            Version current = new Version(currentVersion);
+            Version latest = new Version(latestVersion);
+            return latest > current;
         }
 
         static void DrawTerminalBar()
