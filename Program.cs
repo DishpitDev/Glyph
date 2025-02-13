@@ -513,6 +513,16 @@ namespace Glyph
                     File.Copy(extractedExecutablePath, currentExecutablePath, true);
                     Console.WriteLine("Successfully updated Glyph. Restarting...");
                     Log("Successfully updated Glyph. Restarting...", logFilePath);
+                    
+                    ProcessStartInfo startInfo = new ProcessStartInfo
+                    {
+                        FileName = currentExecutablePath,
+                        UseShellExecute = false,
+                        CreateNoWindow = false
+                    };
+
+                    Process.Start(startInfo);
+                    Environment.Exit(0);
                 }
                 catch (Exception ex)
                 {
