@@ -31,7 +31,7 @@ namespace Glyph
                 if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
                 {
                     Console.ForegroundColor = ConsoleColor.Magenta;
-                    Console.WriteLine("Goodbye! Thanks for using Glyph.");
+                    Console.WriteLine("Thanks for using Glyph; Goodbye! <3");
                     Console.ResetColor();
                     break;
                 }
