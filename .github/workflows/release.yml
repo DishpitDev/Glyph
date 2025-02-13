@@ -35,11 +35,11 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Publish (Windows)
-        run: dotnet publish --configuration Release --no-restore --runtime win-x64 --self-contained true --trim-mode link --output ./publish-win /p:PublishSingleFile=true
+        run: dotnet publish --configuration Release --no-restore --runtime win-x64 --output ./publish-win
       - name: Publish (Linux)
-        run: dotnet publish --configuration Release --no-restore --runtime linux-x64 --self-contained true --trim-mode link --output ./publish-linux /p:PublishSingleFile=true
+        run: dotnet publish --configuration Release --no-restore --runtime linux-x64 --output ./publish-linux
       - name: Publish (macOS)
-        run: dotnet publish --configuration Release --no-restore --runtime osx-x64 --self-contained true --trim-mode link --output ./publish-osx /p:PublishSingleFile=true
+        run: dotnet publish --configuration Release --no-restore --runtime osx-x64 --output ./publish-osx
 
       - name: Create Release Archive
         run: |
