@@ -282,6 +282,10 @@ namespace Glyph
 
         static void RedrawInput(string input, int cursorPosition)
         {
+            int inputStartPos = $"{_currentLocation}{_currentLocationLast} : glyph> ".Length;
+            
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.Write(new string(' ', Console.WindowWidth - 1));
             Console.SetCursorPosition(0, Console.CursorTop);
             
             Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -292,13 +296,11 @@ namespace Glyph
             Console.Write(" : glyph> ");
             Console.ResetColor();
             
-            int inputStartPos = $"{_currentLocation}{_currentLocationLast} : glyph> ".Length;
-            Console.Write(new string(' ', Console.WindowWidth - inputStartPos));
-            
-            Console.SetCursorPosition(inputStartPos, Console.CursorTop);
             Console.Write(input);
+            
             Console.SetCursorPosition(inputStartPos + cursorPosition, Console.CursorTop);
         }
+
 
 
         static List<string> GetSuggestions(string prefix)
