@@ -17,8 +17,13 @@ namespace Glyph
 
         static async Task Main()
         {
+            Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            _currentDirectory = Directory.GetCurrentDirectory();
+            
             Console.Title = "Glyph Shell";
+            
             ShowWelcomeMessage();
+            bool updateAvailable = await CheckForUpdates();
             (_currentLocation, _currentLocationLast) = FormatPath(_currentDirectory);
 
             while (true)
@@ -38,6 +43,70 @@ namespace Glyph
 
                 await ExecuteCommand(input);
             }
+        }
+
+        static async Task<bool> CheckForUpdates()
+        {
+            try
+            {
+                string latestReleaseInfo = await GetLatestReleaseInfo();
+                if (string.IsNullOrEmpty(latestReleaseInfo))
+                {
+                    return false;
+                }
+
+                string latestVersion = ParseLatestVersion(latestReleaseInfo);
+                string currentVersion =
+                    Assembly
+                        .GetExecutingAssembly()
+                        .GetCustomAttribute<AssemblyFileVersionAttribute>()
+                        ?.Version ??
+                    "0.0.0";
+
+                if (string.IsNullOrEmpty(latestVersion))
+                {
+                    return false;
+                }
+
+                if (IsNewerVersionAvailable(currentVersion, latestVersion))
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine(
+                        $"Glyph v{latestVersion} is now available! " +
+                        "Type 'update' to update."
+                    );
+                    Console.ResetColor();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
+        static string ParseLatestVersion(string releaseInfo)
+        {
+            try
+            {
+                dynamic release = Newtonsoft.Json.JsonConvert.DeserializeObject(releaseInfo);
+                return release.tag_name.ToString().TrimStart('v');
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        static bool IsNewerVersionAvailable(string currentVersion, string latestVersion)
+        {
+            Version current = new Version(currentVersion);
+            Version latest = new Version(latestVersion);
+            return latest > current;
         }
 
         static void DrawTerminalBar()
@@ -259,6 +328,8 @@ namespace Glyph
                     ?.Version ??
                 "Unknown";
 
+            string currentTime = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss");
+
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@$"
      ░▒▓██████▓▒░░▒▓█▓▒░   ░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░ 
@@ -270,6 +341,7 @@ namespace Glyph
      ░▒▓██████▓▒░░▒▓████████▓▒░▒▓█▓▒░   ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░ 
 
       Glyph Shell - v{version} - by DishpitDev  
+      Current time: {currentTime}
       Open-source and built for power. Type 'exit' to quit.
       ");
             Console.ResetColor();
@@ -300,8 +372,11 @@ namespace Glyph
                 case "help":
                     ShowHelp();
                     break;
-                case "update":
-                    await UpdateCommand();
+                case "glyph":
+                    if (parts[1] == "update")
+                    {
+                        await UpdateCommand();
+                    }
                     break;
                 default:
                     await ExecuteExternalCommand(command);
@@ -313,16 +388,30 @@ namespace Glyph
         {
             try
             {
+                string[] parts = command.Split(' ', 2);
+                string executableName = parts[0];
+                string arguments = parts.Length > 1 ? parts[1] : "";
+                
+                string? executablePath = FindExecutableInPath(executableName);
+
+                if (executablePath == null)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Command not found: {executableName}");
+                    Console.ResetColor();
+                    return;
+                }
+
                 var process = new Process()
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = command.Split(' ')[0],
-                        Arguments = string.Join(" ", command.Split(' ').Skip(1)),
+                        FileName = executablePath,
+                        Arguments = arguments,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
-                        CreateNoWindow = true,
+                        CreateNoWindow = false,
                         WorkingDirectory = _currentDirectory
                     }
                 };
@@ -348,6 +437,38 @@ namespace Glyph
                 Console.ResetColor();
             }
         }
+        
+        static string? FindExecutableInPath(string executableName)
+        {
+            string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (string.IsNullOrEmpty(pathEnv))
+            {
+                return null;
+            }
+
+            string[] paths = pathEnv.Split(Path.PathSeparator);
+
+            foreach (string path in paths)
+            {
+                string fullPath = Path.Combine(path, executableName);
+                if (File.Exists(fullPath))
+                {
+                    return fullPath;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    string fullPathWithExe = fullPath + ".exe";
+                    if (File.Exists(fullPathWithExe))
+                    {
+                        return fullPathWithExe;
+                    }
+                }
+            }
+
+            return null;
+        }
+
 
         static void ShowCpuUsage()
         {
