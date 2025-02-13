@@ -447,10 +447,34 @@ namespace Glyph
                 Log($"Extracting to: {extractionPath}", logFilePath);
                 ZipFile.ExtractToDirectory(downloadedZipPath, extractionPath);
 
-                string executableName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
+                string executableName = Path.GetFileNameWithoutExtension(
+                    Assembly.GetExecutingAssembly().Location
+                );
+                
+                string platformSubdirectory = "";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    platformSubdirectory = "publish-win";
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    platformSubdirectory = "publish-linux";
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    platformSubdirectory = "publish-osx";
+                }
+                else
+                {
+                    Log("Unsupported platform.", logFilePath);
+                    Console.WriteLine("Unsupported platform.");
+                    return;
+                }
+                
                 string extractedExecutablePath = Path.Combine(
                     extractionPath,
-                    executableName
+                    platformSubdirectory,
+                    executableName + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "")
                 );
 
                 if (!File.Exists(extractedExecutablePath))
