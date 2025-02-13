@@ -13,6 +13,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        
+      - name: Clear NuGet cache
+        run: dotnet nuget locals all --clear
 
       - name: Extract Version
         id: extract_version
@@ -31,17 +34,17 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
+      - name: Publish
+        run: dotnet publish --configuration Release --no-restore --runtime linux-x64 --output ./publish-linux
       - name: Publish (Windows)
-        run: dotnet publish --configuration Release --no-restore --runtime win-x64 --self-contained true --trim-mode link --output ./publish-win
-      - name: Publish (Linux)
-        run: dotnet publish --configuration Release --no-restore --runtime linux-x64 --self-contained true --trim-mode link --output ./publish-linux
+        run: dotnet publish --configuration Release --no-restore --runtime win-x64 --output ./publish-win
       - name: Publish (macOS)
-        run: dotnet publish --configuration Release --no-restore --runtime osx-x64 --self-contained true --trim-mode link --output ./publish-osx
+        run: dotnet publish --configuration Release --no-restore --runtime osx-x64 --output ./publish-osx
 
       - name: Create Release Archive
         run: |
-          zip -r glyph-win.zip ./publish-win
           zip -r glyph-linux.zip ./publish-linux
+          zip -r glyph-win.zip ./publish-win
           zip -r glyph-osx.zip ./publish-osx
 
       - name: Create GitHub Release
