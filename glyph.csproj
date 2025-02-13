@@ -5,10 +5,14 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.0.1</Version>
+    <Version>0.0.2</Version>
     <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
     <PublishTrimmed>true</PublishTrimmed>
     <PublishReadyToRun>true</PublishReadyToRun>
+    <Company>DishpitDev</Company>
+    <Description>The last shell you'll ever use.</Description>
+    <Authors>DishpitDev</Authors>
+    <Copyright>© 2025 DishpitDev. All rights reserved.</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
