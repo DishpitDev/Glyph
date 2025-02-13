@@ -10,7 +10,7 @@ namespace Glyph
         static string _currentDirectory = Directory.GetCurrentDirectory();
         static string _currentLocation = string.Empty;
         static string _currentLocationLast = string.Empty;
-        
+
         private const string GitHubRepoOwner = "DishpitDev";
         private const string GitHubRepoName = "Glyph";
         private const string UpdateDirectoryName = "GlyphUpdates";
@@ -394,7 +394,7 @@ namespace Glyph
             try
             {
                 Log($"Starting update process...", logFilePath);
-                
+
                 string tempUpdateDirectory = Path.Combine(
                     Path.GetTempPath(),
                     UpdateDirectoryName
@@ -450,7 +450,7 @@ namespace Glyph
                 string executableName = Path.GetFileNameWithoutExtension(
                     Assembly.GetExecutingAssembly().Location
                 );
-                
+
                 string platformSubdirectory = "";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
@@ -470,7 +470,7 @@ namespace Glyph
                     Console.WriteLine("Unsupported platform.");
                     return;
                 }
-                
+
                 string extractedExecutablePath = Path.Combine(
                     extractionPath,
                     platformSubdirectory,
@@ -488,8 +488,11 @@ namespace Glyph
                     );
                     return;
                 }
-
-                string currentExecutablePath = Assembly.GetExecutingAssembly().Location;
+                
+                string executableExtension =
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
+                string currentExecutablePath = Path.Combine(Directory.GetCurrentDirectory(),
+                    Assembly.GetExecutingAssembly().GetName().Name + executableExtension);
                 string currentExecutableExtension = Path.GetExtension(currentExecutablePath);
                 string backupExecutablePath = Path.Combine(
                     tempUpdateDirectory,
@@ -554,6 +557,7 @@ namespace Glyph
                 Console.ResetColor();
             }
         }
+
 
         static async Task<string> GetLatestReleaseInfo()
         {
